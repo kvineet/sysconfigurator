@@ -34,12 +34,7 @@ repositories {
 }
 
 dependencies {
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:23.0'
-
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
-    
+ 
 	// https://mvnrepository.com/artifact/com.google.inject/guice
 	compile group: 'com.google.inject', name: 'guice', version: '4.2.0'
 
@@ -58,6 +53,12 @@ dependencies {
 	// https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
 	testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
 	
+	// https://mvnrepository.com/artifact/commons-codec/commons-codec
+	compile group: 'commons-codec', name: 'commons-codec', version: '1.11'
+
+	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
+
     
 }
 
