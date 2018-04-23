@@ -2,7 +2,6 @@ package io.kvineet.sysconfigurator.services;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,21 +22,18 @@ public class BasicService {
 	@Inject
 	private ConnectionPool connectionPool;
 
-	public List<Columns> listAllColumns(String tableName) {
+	public List<Columns> listAllColumns(String tableName) throws SQLException {
 		Connection conn = null;
 		try {
 			conn = connectionPool.getConnection();
 			return basicDao.fetchColumns(tableName, conn);
-		} catch (SQLException e) {
-			e.printStackTrace();
 		}
 		finally {
 			connectionPool.closeConnection(conn);
 		}
-		return new ArrayList<>();
 	} 
 	
-	public String updateConfig(String tableName, List<Map<String, String>> dataSet, List<Map<String, String>> removedSet, List<Columns> columns)  {
+	public String updateConfig(String tableName, List<Map<String, String>> dataSet, List<Map<String, String>> removedSet, List<Columns> columns) throws SQLException  {
 		Connection conn = null;
 		try {
 			conn = connectionPool.getConnection();
@@ -45,8 +41,6 @@ public class BasicService {
 			for(Map<String, String> data: removedSet) {
 				basicDao.removeData(tableName, data, columns, conn);
 			}
-		} catch (SQLException e) {
-			e.printStackTrace();
 		}
 		finally {
 			connectionPool.closeConnection(conn);
@@ -54,20 +48,16 @@ public class BasicService {
 		return "success";
 	}
 
-	public List<Map<String, String>> retriveData(String tableName, List<Columns> columns) {
+	public List<Map<String, String>> retriveData(String tableName, List<Columns> columns) throws SQLException {
 		
 		Connection conn = null;
 		try {
 			conn = connectionPool.getConnection();
 			return basicDao.retriveData(tableName, columns, conn);
-		} catch (SQLException e) {
-			e.printStackTrace();
 		}
 		finally {
 			connectionPool.closeConnection(conn);
 		}
-		return new ArrayList<>();
-		
 	}
 	
 	public void encryptData(String key, List<Map<String, String>> dataSet, List<Columns> columns){

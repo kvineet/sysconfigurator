@@ -137,8 +137,7 @@ public class AppWindow {
 					String val = e.getDocument().getText(0, e.getDocument().getLength());
 					parseData(val);
 				} catch (BadLocationException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					JOptionPane.showMessageDialog(null, "error: " + e1.getMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			
@@ -148,8 +147,7 @@ public class AppWindow {
 					String val = e.getDocument().getText(0, e.getDocument().getLength());
 					parseData(val);
 				} catch (BadLocationException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					JOptionPane.showMessageDialog(null, "error: " + e1.getMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			@Override
@@ -167,8 +165,7 @@ public class AppWindow {
 					dbPassword.setText(data.get("dbPassword"));
 					tableName.setText(data.get("tableName"));
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -263,9 +260,15 @@ public class AppWindow {
 					} catch (SQLException e) {
 						JOptionPane.showMessageDialog(null, "Failed to connect to server due to error: \n" + e.getMessage());
 					}
-					List<Columns> columns = basicService.listAllColumns(tableName.getText());
-					List<Map<String, String>> dataSet = basicService.retriveData(tableName.getText(), columns);
-					tableModel.reloadData(columns, dataSet);
+					List<Columns> columns;
+					try {
+						columns = basicService.listAllColumns(tableName.getText());
+						List<Map<String, String>> dataSet = basicService.retriveData(tableName.getText(), columns);
+						tableModel.reloadData(columns, dataSet);
+					} catch (SQLException e) {
+						JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
 					tglbtnConnect.setText("Disconnect");
 				}else {
 					List<Columns> cols = AppWindowUtil.constructCols(); 
@@ -274,8 +277,8 @@ public class AppWindow {
 					try {
 						connectionPool.closeDataSource();
 					} catch (SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
+						return;
 					}
 					tglbtnConnect.setText("Connect");
 				}
@@ -323,10 +326,15 @@ public class AppWindow {
 		JButton btnSave = new JButton("Save");
 		btnSave.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				List<Columns> columns = basicService.listAllColumns(tableName.getText());
-				List<Map<String, String>> dataSet = tableModel.getDataSet();
-				List<Map<String, String>> removedSet = tableModel.getRemovedData();
-				basicService.updateConfig(tableName.getText(), dataSet, removedSet, columns);
+				List<Columns> columns;
+				try {
+					columns = basicService.listAllColumns(tableName.getText());
+					List<Map<String, String>> dataSet = tableModel.getDataSet();
+					List<Map<String, String>> removedSet = tableModel.getRemovedData();
+					basicService.updateConfig(tableName.getText(), dataSet, removedSet, columns);
+				} catch (SQLException e) {
+					JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
+				}
 			}
 		});
 		GridBagConstraints gbc_btnSave = new GridBagConstraints();
