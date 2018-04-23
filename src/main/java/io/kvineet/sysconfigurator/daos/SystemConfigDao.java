@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import io.kvineet.sysconfigurator.models.Columns;
 import io.kvineet.sysconfigurator.models.Columns.SortByOrder;
 
@@ -66,7 +68,11 @@ public class SystemConfigDao {
 	}
 
 	private String joinData(Map<String, String> data, List<Columns> cols) {
-		return cols.stream().map(e -> "\'" + data.get(e.getName()) + "\'").collect(Collectors.joining(", "));
+		return cols.stream().map(e -> "\'" + escape(data.get(e.getName())) + "\'").collect(Collectors.joining(", "));
+	}
+
+	private String escape(String string) {
+		return StringUtils.replace(string, "'", "''");
 	}
 
 	public List<Map<String, String>> retriveData(String tableName, List<Columns> columns, Connection conn) throws SQLException {
@@ -103,7 +109,7 @@ public class SystemConfigDao {
 		
 		String query = "DELETE FROM " + tableName + " \n"
 				+ "WHERE \n"
-				+  pkeys.stream().map(e -> e + " = \'" + data.get(e) + "\' ").collect(Collectors.joining("AND "));
+				+  pkeys.stream().map(e -> e + " = \'" + escape(data.get(e)) + "\' ").collect(Collectors.joining("AND "));
 		
 		System.out.println(query);
 		Statement stmnt = conn.createStatement();
