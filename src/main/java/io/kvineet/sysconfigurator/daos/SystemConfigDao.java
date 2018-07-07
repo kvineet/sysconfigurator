@@ -50,9 +50,9 @@ public class SystemConfigDao {
     if (dataSet.isEmpty()) {
       return;
     }
-    List<String> pkeys = columns.stream().filter(e -> e.isPrimaryKey()).map(e -> e.getName())
+    List<String> pkeys = columns.stream().filter(Columns::isPrimaryKey).map(Columns::getName)
         .collect(Collectors.toList());
-    List<String> cols = columns.stream().filter(e -> !e.isPrimaryKey()).map(e -> e.getName())
+    List<String> cols = columns.stream().filter(e -> !e.isPrimaryKey()).map(Columns::getName)
         .collect(Collectors.toList());
 
     String query = "INSERT INTO " + tableName + "\n(\n"
@@ -81,8 +81,10 @@ public class SystemConfigDao {
       Connection conn) throws SQLException {
     Collections.sort(columns, new SortByOrder());
     String query =
-        "SELECT \n" + columns.stream().map(e -> e.getName()).collect(Collectors.joining(", "))
-            + " FROM " + tableName;
+        "SELECT \n" + columns.stream().map(Columns::getName).collect(Collectors.joining(", "))
+            + " FROM " + tableName + "ORDER BY "
+            + columns.stream().filter(Columns::isPrimaryKey).map(Columns::getName).collect(Collectors.joining(", "))
+            + " ASC";
     System.out.println("Query: " + query);
     PreparedStatement ps = conn.prepareStatement(query);
     ResultSet rs = ps.executeQuery();
