@@ -23,7 +23,7 @@ public class SystemConfigDao {
         "SELECT isc.column_name, isc.ORDINAL_POSITION, coalesce(isc.ORDINAL_POSITION = ANY(i.indkey), false) as is_primary_key\n"
             + "FROM INFORMATION_SCHEMA.COLUMNS isc\n"
             + "LEFT JOIN pg_index i ON (i.indrelid =TABLE_NAME::regclass)\n"
-            + "WHERE TABLE_NAME = '" + tableName + "'\n" + "ORDER BY ORDINAL_POSITION";
+            + "WHERE TABLE_NAME = '" + tableName + "'\n" + " ORDER BY ORDINAL_POSITION";
 
     System.out.println(query);
 
@@ -82,7 +82,7 @@ public class SystemConfigDao {
     Collections.sort(columns, new SortByOrder());
     String query =
         "SELECT \n" + columns.stream().map(Columns::getName).collect(Collectors.joining(", "))
-            + " FROM " + tableName + "ORDER BY "
+            + " FROM " + tableName + " ORDER BY "
             + columns.stream().filter(Columns::isPrimaryKey).map(Columns::getName).collect(Collectors.joining(", "))
             + " ASC";
     System.out.println("Query: " + query);
