@@ -14,6 +14,8 @@ import java.util.Optional;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
@@ -107,4 +109,11 @@ public class EncryptionUtil {
     }
     return new IvParameterSpec(iv);
   }
+
+public static String generateKey(Integer keyLength) throws NoSuchAlgorithmException {
+    KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+    keyGen.init(keyLength);
+    SecretKey key = keyGen.generateKey();
+     return Base64.encodeBase64String(key.getEncoded());
+}
 }
