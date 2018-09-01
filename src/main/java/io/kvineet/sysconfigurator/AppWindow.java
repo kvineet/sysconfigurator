@@ -1,46 +1,50 @@
 package io.kvineet.sysconfigurator;
 
 import java.awt.BorderLayout;
+import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.text.BadLocationException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import com.google.inject.Inject;
+import com.jgoodies.forms.layout.ColumnSpec;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jgoodies.forms.layout.FormSpecs;
+import com.jgoodies.forms.layout.RowSpec;
 import io.kvineet.sysconfigurator.models.Columns;
 import io.kvineet.sysconfigurator.models.DbConfig;
 import io.kvineet.sysconfigurator.models.EncryptorTableModel;
 import io.kvineet.sysconfigurator.services.BasicService;
 import io.kvineet.sysconfigurator.utils.AppWindowUtil;
-import io.kvineet.sysconfigurator.utils.JsonUtils;
+import io.kvineet.sysconfigurator.utils.EncryptionUtil;
 
 public class AppWindow {
 
-  @Inject
+  
+@Inject
   private ConnectionPool connectionPool;
 
   @Inject
@@ -52,8 +56,17 @@ public class AppWindow {
   private JTextField dbUserName;
   private JTextField dbPassword;
   private EncryptorTableModel tableModel;
-  JTable table;
+  private JComboBox<Integer> tagLength;
   private JTextField tableName;
+  JTable table;
+
+
+  private static final List<String> keyLengths = Stream.of("128 Bit", "256 Bit").collect(Collectors.toList());
+  private static final List<Integer> keyBits = Stream.of(128, 256).collect(Collectors.toList());
+  private static final List<Integer> tagLengths = Stream.of(128, 120, 112, 104, 96).collect(Collectors.toList());
+  private static final int DEFAULT_SELECT = 1;
+  private static final Integer DEFAULT_TAG_LENGTH = 128;
+
 
   /**
    * Launch the application.
@@ -83,321 +96,261 @@ public class AppWindow {
    */
   private void initialize() {
     frame = new JFrame();
-    frame.setBounds(100, 100, 450, 300);
+    frame.setBounds(100, 100, 1056, 503);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     JSplitPane splitPane = new JSplitPane();
+    splitPane.setOneTouchExpandable(true);
     splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
     frame.getContentPane().add(splitPane, BorderLayout.CENTER);
 
     JPanel panel = new JPanel();
+    panel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
     splitPane.setLeftComponent(panel);
-    GridBagLayout gbl_panel = new GridBagLayout();
-    gbl_panel.columnWidths = new int[] {4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
-    gbl_panel.rowHeights = new int[] {4, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4};
-    gbl_panel.columnWeights = new double[] {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    gbl_panel.rowWeights =
-        new double[] {1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
-    panel.setLayout(gbl_panel);
-
-    JLabel aesLabel = new JLabel("aesKey");
-    GridBagConstraints gbc_aesLabel = new GridBagConstraints();
-    gbc_aesLabel.gridwidth = 3;
-    gbc_aesLabel.insets = new Insets(0, 0, 5, 5);
-    gbc_aesLabel.gridx = 0;
-    gbc_aesLabel.gridy = 1;
-    panel.add(aesLabel, gbc_aesLabel);
-
-    aesKey = new JTextField();
-    GridBagConstraints gbc_textField = new GridBagConstraints();
-    gbc_textField.gridwidth = 5;
-    gbc_textField.insets = new Insets(0, 0, 5, 5);
-    gbc_textField.fill = GridBagConstraints.HORIZONTAL;
-    gbc_textField.gridx = 4;
-    gbc_textField.gridy = 1;
-    panel.add(aesKey, gbc_textField);
-    aesKey.setColumns(10);
-
-    JLabel lblJson = new JLabel("Json");
-    GridBagConstraints gbc_lblJson = new GridBagConstraints();
-    gbc_lblJson.insets = new Insets(0, 0, 5, 5);
-    gbc_lblJson.gridx = 9;
-    gbc_lblJson.gridy = 1;
-    panel.add(lblJson, gbc_lblJson);
-
-
-    JTextArea json = new JTextArea();
-    json.setLineWrap(true);
-    json.getDocument().addDocumentListener(new DocumentListener() {
-
-      @Override
-      public void removeUpdate(DocumentEvent e) {
-        try {
-          String val = e.getDocument().getText(0, e.getDocument().getLength());
-          parseData(val);
-        } catch (BadLocationException e1) {
-          JOptionPane.showMessageDialog(null, "error: " + e1.getMessage(), "Alert",
-              JOptionPane.ERROR_MESSAGE);
+    
+    JButton btnFillFromJson = new JButton("Fill From Json");
+    btnFillFromJson.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent arg0) {
+            Map<String, String> data = new HashMap<>();
+            data.put("aesKey", aesKey.getText());
+            data.put("dbUrl", dbUrl.getText());
+            data.put("dbUserName", dbUserName.getText());
+            data.put("dbPassword", dbPassword.getText());
+            data.put("tableName", tableName.getText());
+            data.put("tagLength", tagLength.getSelectedItem().toString());
+            JsonInput dialog = new JsonInput();
+            dialog.setData(data);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setVisible(true);
+            data = dialog.getData();
+            if (data != null) {
+                aesKey.setText(data.get("aesKey"));
+                dbUrl.setText(data.get("dbUrl"));
+                dbUserName.setText(data.get("dbUserName"));
+                dbPassword.setText(data.get("dbPassword"));
+                tableName.setText(data.get("tableName"));
+                Integer tagL = null;
+                try {
+                    tagL = Integer.parseInt(data.get("tagLength"));
+                }catch (NumberFormatException e) {
+                    tagL = new Integer(DEFAULT_TAG_LENGTH);
+                }
+                tagLength.setSelectedItem(tagL);
+            }
         }
-      }
-
-      @Override
-      public void insertUpdate(DocumentEvent e) {
-        try {
-          String val = e.getDocument().getText(0, e.getDocument().getLength());
-          parseData(val);
-        } catch (BadLocationException e1) {
-          JOptionPane.showMessageDialog(null, "error: " + e1.getMessage(), "Alert",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-
-      @Override
-      public void changedUpdate(DocumentEvent e) {}
-
-      private void parseData(String val) {
-        Map<String, String> data;
-        try {
-          data = JsonUtils.fromJson(val, new TypeReference<Map<String, String>>() {});
-          aesKey.setText(data.get("aesKey"));
-          dbUrl.setText(data.get("dbUrl"));
-          dbUserName.setText(data.get("dbUserName"));
-          dbPassword.setText(data.get("dbPassword"));
-          tableName.setText(data.get("tableName"));
-        } catch (IOException e) {
-          JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
     });
-    GridBagConstraints gbc_json = new GridBagConstraints();
-    gbc_json.fill = GridBagConstraints.VERTICAL;
-    gbc_json.gridwidth = 2;
-    gbc_json.gridheight = 6;
-    gbc_json.insets = new Insets(0, 0, 5, 0);
-    gbc_json.gridx = 9;
-    gbc_json.gridy = 2;
-    panel.add(json, gbc_json);
+        panel.setLayout(new FormLayout(new ColumnSpec[] {
+                ColumnSpec.decode("46px"),
+                ColumnSpec.decode("88px"),
+                FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
+                ColumnSpec.decode("169px"),
+                FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
+                ColumnSpec.decode("132px"),
+                FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
+                ColumnSpec.decode("133px"),
+                FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
+                ColumnSpec.decode("142px"),
+                FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
+                ColumnSpec.decode("138px"),
+                FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
+                ColumnSpec.decode("170px"),},
+            new RowSpec[] {
+                FormSpecs.LABEL_COMPONENT_GAP_ROWSPEC,
+                RowSpec.decode("25px"),
+                FormSpecs.LINE_GAP_ROWSPEC,
+                RowSpec.decode("19px"),
+                FormSpecs.LINE_GAP_ROWSPEC,
+                RowSpec.decode("19px"),
+                FormSpecs.LINE_GAP_ROWSPEC,
+                RowSpec.decode("19px"),
+                FormSpecs.LINE_GAP_ROWSPEC,
+                RowSpec.decode("25px"),
+                RowSpec.decode("35px"),
+                RowSpec.decode("25px"),
+                FormSpecs.LINE_GAP_ROWSPEC,
+                RowSpec.decode("25px"),}));
+        
+            JLabel lblDburl = new JLabel("dbURL");
+            panel.add(lblDburl, "2, 2, right, center");
+    
+        dbUrl = new JTextField();
+        panel.add(dbUrl, "4, 2, 7, 1, fill, center");
+        dbUrl.setColumns(10);
+    panel.add(btnFillFromJson, "14, 2, fill, center");
+        
+            JLabel lblDatabaseUsername = new JLabel("dbUserName");
+            panel.add(lblDatabaseUsername, "2, 4, right, center");
+            
+                dbUserName = new JTextField();
+                panel.add(dbUserName, "4, 4, 7, 1, fill, center");
+                dbUserName.setColumns(10);
+                
+                    JLabel lblDbpassword = new JLabel("dbPassword");
+                    panel.add(lblDbpassword, "2, 6, right, center");
+            
+                dbPassword = new JPasswordField();
+                dbPassword.setColumns(10);
+                panel.add(dbPassword, "4, 6, 7, 1, fill, center");
+        
+            JLabel lblTableName = new JLabel("tableName");
+            panel.add(lblTableName, "2, 8, right, center");
+                
+                
+                    tableName = new JTextField();
+                    panel.add(tableName, "4, 8, 7, 1, fill, center");
+                    tableName.setColumns(10);
+                                
+                                    JToggleButton tglbtnConnect = new JToggleButton("Connect");
+                                    tglbtnConnect.setBackground(UIManager.getColor("Button.background"));
+                                    tglbtnConnect.addItemListener(new ItemListener() {
 
-    JSeparator separator = new JSeparator();
-    GridBagConstraints gbc_separator = new GridBagConstraints();
-    gbc_separator.gridwidth = 10;
-    gbc_separator.insets = new Insets(0, 0, 5, 5);
-    gbc_separator.gridx = 0;
-    gbc_separator.gridy = 2;
-    panel.add(separator, gbc_separator);
+                                      @Override
+                                      public void itemStateChanged(ItemEvent arg0) {
+                                        if (tglbtnConnect.isSelected()) {
+                                          DbConfig dbConfig = constructDbConfig();
+                                          try {
+                                            connectionPool.initConnection(dbConfig);
+                                          } catch (SQLException e) {
+                                            JOptionPane.showMessageDialog(null,
+                                                "Failed to connect to server due to error: \n" + e.getMessage());
+                                          }
+                                          List<Columns> columns;
+                                          try {
+                                            columns = basicService.listAllColumns(tableName.getText());
+                                            List<Map<String, String>> dataSet =
+                                                basicService.retriveData(tableName.getText(), columns);
+                                            tableModel.reloadData(columns, dataSet);
+                                          } catch (SQLException e) {
+                                            JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
+                                                JOptionPane.ERROR_MESSAGE);
+                                            return;
+                                          }
+                                          tglbtnConnect.setText("Disconnect");
+                                        } else {
+                                          List<Columns> cols = AppWindowUtil.constructCols();
+                                          List<Map<String, String>> dataSet = AppWindowUtil.constructDataSet();
+                                          tableModel.reloadData(cols, dataSet);
+                                          try {
+                                            connectionPool.closeDataSource();
+                                          } catch (SQLException e) {
+                                            JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
+                                                JOptionPane.ERROR_MESSAGE);
+                                            return;
+                                          }
+                                          tglbtnConnect.setText("Connect");
+                                        }
+                                      }
 
-    JLabel lblDburl = new JLabel("dbURL");
-    GridBagConstraints gbc_lblDburl = new GridBagConstraints();
-    gbc_lblDburl.gridwidth = 3;
-    gbc_lblDburl.insets = new Insets(0, 0, 5, 5);
-    gbc_lblDburl.gridx = 0;
-    gbc_lblDburl.gridy = 3;
-    panel.add(lblDburl, gbc_lblDburl);
+                                      private DbConfig constructDbConfig() {
+                                        DbConfig dbConfig = new DbConfig();
+                                        dbConfig.setPoolName("test");
+                                        dbConfig.setJdbcUrl(dbUrl.getText());
+                                        dbConfig.setDbUserName(dbUserName.getText());
+                                        dbConfig.setDbPassword(dbPassword.getText());
+                                        dbConfig.setMaximumPoolSize(3);
+                                        dbConfig.setMinimumIdle(1);
+                                        return dbConfig;
+                                      }
+                                    });
+                                    panel.add(tglbtnConnect, "10, 10, fill, center");
+                            
+                                JButton btnSave = new JButton("Save");
+                                btnSave.addActionListener(new ActionListener() {
+                                  public void actionPerformed(ActionEvent arg0) {
+                                    List<Columns> columns;
+                                    try {
+                                      columns = basicService.listAllColumns(tableName.getText());
+                                      List<Map<String, String>> dataSet = tableModel.getDataSet();
+                                      List<Map<String, String>> removedSet = tableModel.getRemovedData();
+                                      basicService.updateConfig(tableName.getText(), dataSet, removedSet, columns);
+                                    } catch (SQLException e) {
+                                      JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
+                                          JOptionPane.ERROR_MESSAGE);
+                                    }
+                                  }
+                                });
+                                panel.add(btnSave, "12, 10, fill, center");
+                        
+                            JLabel aesLabel = new JLabel("aesKey");
+                            aesLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+                            aesLabel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+                            panel.add(aesLabel, "2, 12, right, center");
+                        
+                            aesKey = new JTextField();
+                            panel.add(aesKey, "4, 12, 3, 1, fill, center");
+                            aesKey.setColumns(8);
+                        
+                        JButton btnNewButton = new JButton("Generate");
+                        btnNewButton.addActionListener(new ActionListener() {
+                            public void actionPerformed(ActionEvent arg0) {
+                             
+                                String input = (String) JOptionPane.showInputDialog(null, "Choose the key length (256 Bit recomended.)",
+                                        "AES Key Length", JOptionPane.QUESTION_MESSAGE, null, 
+                                        keyLengths.toArray(), keyLengths.get(DEFAULT_SELECT)); // Initial choice
+                                 try {
 
-    dbUrl = new JTextField();
-    GridBagConstraints gbc_textField_1 = new GridBagConstraints();
-    gbc_textField_1.gridwidth = 5;
-    gbc_textField_1.insets = new Insets(0, 0, 5, 5);
-    gbc_textField_1.fill = GridBagConstraints.HORIZONTAL;
-    gbc_textField_1.gridx = 4;
-    gbc_textField_1.gridy = 3;
-    panel.add(dbUrl, gbc_textField_1);
-    dbUrl.setColumns(10);
+                                     int index = keyLengths.indexOf(input);
+                                     if(index > -1) {
+                                         String newKey = EncryptionUtil.generateKey(keyBits.get(index));                
+                                         aesKey.setText(newKey);
+                                     }
 
-    JLabel lblDatabaseUsername = new JLabel("dbUserName");
-    GridBagConstraints gbc_lblDatabaseUsername = new GridBagConstraints();
-    gbc_lblDatabaseUsername.gridwidth = 3;
-    gbc_lblDatabaseUsername.insets = new Insets(0, 0, 5, 5);
-    gbc_lblDatabaseUsername.gridx = 0;
-    gbc_lblDatabaseUsername.gridy = 4;
-    panel.add(lblDatabaseUsername, gbc_lblDatabaseUsername);
+                                } catch (NoSuchAlgorithmException e) {
+                                    JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
+                                            JOptionPane.ERROR_MESSAGE);
+                                }
 
-    dbUserName = new JTextField();
-    GridBagConstraints gbc_textField_2 = new GridBagConstraints();
-    gbc_textField_2.gridwidth = 5;
-    gbc_textField_2.insets = new Insets(0, 0, 5, 5);
-    gbc_textField_2.fill = GridBagConstraints.HORIZONTAL;
-    gbc_textField_2.gridx = 4;
-    gbc_textField_2.gridy = 4;
-    panel.add(dbUserName, gbc_textField_2);
-    dbUserName.setColumns(10);
-
-    JLabel lblDbpassword = new JLabel("dbPassword");
-    GridBagConstraints gbc_lblDbpassword = new GridBagConstraints();
-    gbc_lblDbpassword.gridwidth = 3;
-    gbc_lblDbpassword.insets = new Insets(0, 0, 5, 5);
-    gbc_lblDbpassword.gridx = 0;
-    gbc_lblDbpassword.gridy = 5;
-    panel.add(lblDbpassword, gbc_lblDbpassword);
-
-    dbPassword = new JPasswordField();
-    dbPassword.setColumns(10);
-    GridBagConstraints gbc_passwordField = new GridBagConstraints();
-    gbc_passwordField.gridwidth = 5;
-    gbc_passwordField.insets = new Insets(0, 0, 5, 5);
-    gbc_passwordField.fill = GridBagConstraints.HORIZONTAL;
-    gbc_passwordField.gridx = 4;
-    gbc_passwordField.gridy = 5;
-    panel.add(dbPassword, gbc_passwordField);
-
-    JLabel lblTableName = new JLabel("tableName");
-    GridBagConstraints gbc_lblTableName = new GridBagConstraints();
-    gbc_lblTableName.gridwidth = 3;
-    gbc_lblTableName.insets = new Insets(0, 0, 5, 5);
-    gbc_lblTableName.gridx = 0;
-    gbc_lblTableName.gridy = 6;
-    panel.add(lblTableName, gbc_lblTableName);
-
-    JToggleButton tglbtnConnect = new JToggleButton("Connect");
-    tglbtnConnect.addItemListener(new ItemListener() {
-
-      @Override
-      public void itemStateChanged(ItemEvent arg0) {
-        if (tglbtnConnect.isSelected()) {
-          DbConfig dbConfig = constructDbConfig();
-          try {
-            connectionPool.initConnection(dbConfig);
-          } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null,
-                "Failed to connect to server due to error: \n" + e.getMessage());
-          }
-          List<Columns> columns;
-          try {
-            columns = basicService.listAllColumns(tableName.getText());
-            List<Map<String, String>> dataSet =
-                basicService.retriveData(tableName.getText(), columns);
-            tableModel.reloadData(columns, dataSet);
-          } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
-                JOptionPane.ERROR_MESSAGE);
-            return;
-          }
-          tglbtnConnect.setText("Disconnect");
-        } else {
-          List<Columns> cols = AppWindowUtil.constructCols();
-          List<Map<String, String>> dataSet = AppWindowUtil.constructDataSet();
-          tableModel.reloadData(cols, dataSet);
-          try {
-            connectionPool.closeDataSource();
-          } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
-                JOptionPane.ERROR_MESSAGE);
-            return;
-          }
-          tglbtnConnect.setText("Connect");
-        }
-      }
-
-      private DbConfig constructDbConfig() {
-        DbConfig dbConfig = new DbConfig();
-        dbConfig.setPoolName("test");
-        dbConfig.setJdbcUrl(dbUrl.getText());
-        dbConfig.setDbUserName(dbUserName.getText());
-        dbConfig.setDbPassword(dbPassword.getText());
-        dbConfig.setMaximumPoolSize(3);
-        dbConfig.setMinimumIdle(1);
-        return dbConfig;
-      }
-    });
-
-
-    tableName = new JTextField();
-    GridBagConstraints gbc_tableName = new GridBagConstraints();
-    gbc_tableName.gridwidth = 5;
-    gbc_tableName.insets = new Insets(0, 0, 5, 5);
-    gbc_tableName.fill = GridBagConstraints.HORIZONTAL;
-    gbc_tableName.gridx = 4;
-    gbc_tableName.gridy = 6;
-    panel.add(tableName, gbc_tableName);
-    tableName.setColumns(10);
-    GridBagConstraints gbc_tglbtnConnect = new GridBagConstraints();
-    gbc_tglbtnConnect.fill = GridBagConstraints.HORIZONTAL;
-    gbc_tglbtnConnect.gridwidth = 3;
-    gbc_tglbtnConnect.insets = new Insets(0, 0, 5, 5);
-    gbc_tglbtnConnect.gridx = 0;
-    gbc_tglbtnConnect.gridy = 8;
-    panel.add(tglbtnConnect, gbc_tglbtnConnect);
-
-    JButton btnDeleteRow = new JButton("Delete Row");
-    btnDeleteRow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        int rowIndex = table.getSelectedRow();
-        if (rowIndex > -1) {
-          tableModel.removeRow(rowIndex);
-        }
-      }
-    });
-
-    JButton btnSave = new JButton("Save");
-    btnSave.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        List<Columns> columns;
-        try {
-          columns = basicService.listAllColumns(tableName.getText());
-          List<Map<String, String>> dataSet = tableModel.getDataSet();
-          List<Map<String, String>> removedSet = tableModel.getRemovedData();
-          basicService.updateConfig(tableName.getText(), dataSet, removedSet, columns);
-        } catch (SQLException e) {
-          JOptionPane.showMessageDialog(null, "error: " + e.getMessage(), "Alert",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    });
-    GridBagConstraints gbc_btnSave = new GridBagConstraints();
-    gbc_btnSave.gridwidth = 3;
-    gbc_btnSave.fill = GridBagConstraints.HORIZONTAL;
-    gbc_btnSave.insets = new Insets(0, 0, 5, 5);
-    gbc_btnSave.gridx = 6;
-    gbc_btnSave.gridy = 8;
-    panel.add(btnSave, gbc_btnSave);
-
-    JButton btnAddRow = new JButton("Add Row");
-    btnAddRow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        tableModel.addRow();
-      }
-    });
-
-    JButton btnDecrypt = new JButton("Decrypt");
-    btnDecrypt.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        List<Map<String, String>> dataSet = tableModel.getDataSet();
-        List<Columns> columns = tableModel.getColumns();
-        basicService.decryptData(aesKey.getText(), dataSet, columns);
-        tableModel.refreshData();
-      }
-    });
-    GridBagConstraints gbc_btnDecrypt = new GridBagConstraints();
-    gbc_btnDecrypt.insets = new Insets(0, 0, 5, 5);
-    gbc_btnDecrypt.gridx = 1;
-    gbc_btnDecrypt.gridy = 9;
-    panel.add(btnDecrypt, gbc_btnDecrypt);
-    GridBagConstraints gbc_btnAddRow = new GridBagConstraints();
-    gbc_btnAddRow.insets = new Insets(0, 0, 5, 5);
-    gbc_btnAddRow.gridx = 9;
-    gbc_btnAddRow.gridy = 9;
-    panel.add(btnAddRow, gbc_btnAddRow);
-
-    JButton btnEncrypt = new JButton("Encrypt");
-    btnEncrypt.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        List<Map<String, String>> dataSet = tableModel.getDataSet();
-        List<Columns> columns = tableModel.getColumns();
-        basicService.encryptData(aesKey.getText(), dataSet, columns);
-        tableModel.refreshData();
-      }
-    });
-    GridBagConstraints gbc_btnEncrypt = new GridBagConstraints();
-    gbc_btnEncrypt.insets = new Insets(0, 0, 0, 5);
-    gbc_btnEncrypt.gridx = 1;
-    gbc_btnEncrypt.gridy = 10;
-    panel.add(btnEncrypt, gbc_btnEncrypt);
-    GridBagConstraints gbc_btnDeleteRow = new GridBagConstraints();
-    gbc_btnDeleteRow.insets = new Insets(0, 0, 0, 5);
-    gbc_btnDeleteRow.gridx = 9;
-    gbc_btnDeleteRow.gridy = 10;
-    panel.add(btnDeleteRow, gbc_btnDeleteRow);
+                            }
+                        });
+                        panel.add(btnNewButton, "8, 12, fill, fill");
+                        
+                            JButton btnAddRow = new JButton("Add Row");
+                            panel.add(btnAddRow, "12, 12, fill, center");
+                            btnAddRow.addActionListener(new ActionListener() {
+                              public void actionPerformed(ActionEvent arg0) {
+                                tableModel.addRow();
+                              }
+                            });
+                        
+                        JLabel lblTaglength = new JLabel("tagLength");
+                        panel.add(lblTaglength, "2, 14, right, center");
+                        
+                        tagLength = new JComboBox<Integer>();
+                        tagLengths.stream().forEach(item -> tagLength.addItem(item));
+                        panel.add(tagLength, "4, 14, fill, center");
+                    
+                        JButton btnEncrypt = new JButton("Encrypt");
+                        btnEncrypt.addActionListener(new ActionListener() {
+                          public void actionPerformed(ActionEvent arg0) {
+                            List<Map<String, String>> dataSet = tableModel.getDataSet();
+                            List<Columns> columns = tableModel.getColumns();
+                            basicService.encryptData(aesKey.getText(), (Integer) tagLength.getSelectedItem(), dataSet, columns);
+                            tableModel.refreshData();
+                          }
+                        });
+                        panel.add(btnEncrypt, "6, 14, fill, center");
+                            
+                                JButton btnDecrypt = new JButton("Decrypt");
+                                btnDecrypt.addActionListener(new ActionListener() {
+                                  public void actionPerformed(ActionEvent arg0) {
+                                    List<Map<String, String>> dataSet = tableModel.getDataSet();
+                                    List<Columns> columns = tableModel.getColumns();
+                                    basicService.decryptData(aesKey.getText(), (Integer) tagLength.getSelectedItem(), dataSet, columns);
+                                    tableModel.refreshData();
+                                  }
+                                });
+                                panel.add(btnDecrypt, "8, 14, fill, center");
+                                        
+                                            JButton btnDeleteRow = new JButton("Delete Row");
+                                            panel.add(btnDeleteRow, "12, 14, fill, center");
+                                        btnDeleteRow.addActionListener(new ActionListener() {
+                                          public void actionPerformed(ActionEvent e) {
+                                            int rowIndex = table.getSelectedRow();
+                                            if (rowIndex > -1) {
+                                              tableModel.removeRow(rowIndex);
+                                            }
+                                          }
+                                        });
 
 
     List<Columns> cols = AppWindowUtil.constructCols();

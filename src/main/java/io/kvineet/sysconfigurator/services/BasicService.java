@@ -57,25 +57,24 @@ public class BasicService {
     }
   }
 
-  public void encryptData(String key, List<Map<String, String>> dataSet, List<Columns> columns) {
+  public void encryptData(String key, Integer tagLength, List<Map<String, String>> dataSet, List<Columns> columns) {
     dataSet.forEach(e -> {
       columns.stream().filter(c -> c.isEncrypted()).forEach(c -> {
         String str = e.get(c.getName());
-        String enc = EncryptionUtil.encrypt(str, key);
+        String enc = EncryptionUtil.encrypt(str, key, tagLength.intValue());
         e.put(c.getName(), enc);
       });
     });
   }
 
-  public void decryptData(String key, List<Map<String, String>> dataSet, List<Columns> columns) {
+  public void decryptData(String key, Integer tagLength, List<Map<String, String>> dataSet, List<Columns> columns) {
     dataSet.forEach(e -> {
       columns.stream().filter(c -> c.isEncrypted()).forEach(c -> {
         String str = e.get(c.getName());
-        String enc = EncryptionUtil.decrypt(str, key);
+        String enc = EncryptionUtil.decrypt(str, key, tagLength.intValue());
         e.put(c.getName(), enc);
       });
     });
   }
-
 
 }
