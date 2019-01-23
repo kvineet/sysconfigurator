@@ -20,11 +20,12 @@ public class SystemConfigDao {
 
   public List<Columns> fetchColumns(String tableName, Connection conn) throws SQLException {
     String query =
-        "SELECT isc.column_name, isc.ORDINAL_POSITION, coalesce(isc.ORDINAL_POSITION = ANY(i.indkey), false) as is_primary_key\n"
-            + "FROM INFORMATION_SCHEMA.COLUMNS isc\n"
-            + "LEFT JOIN pg_index i ON (i.indrelid =TABLE_NAME::regclass)\n"
-            + "WHERE TABLE_NAME = '" + tableName + "'\n" + " ORDER BY ORDINAL_POSITION";
-
+        "select isc.column_name, isc.ORDINAL_POSITION, kc.constraint_name iS NOT NULL as is_primary_key\n"
+        + "from information_schema.columns isc\n"
+        + "left join information_schema.key_column_usage kc\n"
+            + "on kc.table_name = isc.table_name and kc.table_schema = isc.table_schema and isc.column_name = kc.column_name\n"
+        + "where isc.table_name = '" + tableName + "'\n"
+        + "order by isc.ORDINAL_POSITION asc";
     System.out.println(query);
 
     PreparedStatement s = conn.prepareStatement(query);
