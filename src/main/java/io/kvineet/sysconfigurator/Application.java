@@ -17,6 +17,7 @@ public class Application {
 
   public static void main(String[] args)
       throws JsonParseException, JsonMappingException, IOException {
+	  
     Injector injector = Guice.createInjector();
     Map<Key<?>, Binding<?>> bindings = injector.getAllBindings();
     bindings.forEach((k, v) -> System.out.println("Key: " + k + "\t value: " + v));
