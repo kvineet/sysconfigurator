@@ -107,8 +107,9 @@ public class AppWindow {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 1060, 503);
+		frame.setBounds(100, 100, 950, 503);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setTitle("SysConfigurator");
 
 		JSplitPane splitPane = new JSplitPane();
 		splitPane.setOneTouchExpandable(true);
@@ -175,12 +176,7 @@ public class AppWindow {
 		JToggleButton tglbtnConnect = new JToggleButton(CONNECT);
 		tglbtnConnect.setBackground(UIManager.getColor("Button.background"));
 		tglbtnConnect.addItemListener(getConnectButtonItemListener(tglbtnConnect));
-		panel.add(tglbtnConnect, "8, 10, fill, center");
-
-		JButton btnSave = new JButton("Save");
-		btnSave.setEnabled(!isConnectionClosed());
-		btnSave.addActionListener(getSaveButtonActionListener());
-		panel.add(btnSave, "10, 10, fill, center");
+		panel.add(tglbtnConnect, "10, 10, fill, center");
 
 		JLabel aesLabel = new JLabel("aesKey");
 		aesLabel.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -189,15 +185,8 @@ public class AppWindow {
 
 		aesKey = new JTextField();
 		aesKey.setColumns(8);
-		panel.add(aesKey, "4, 12, 3, 1, fill, center");
+		panel.add(aesKey, "4, 12, 5, 1, fill, center");
 
-		JButton btnNewButton = new JButton("Generate");
-		btnNewButton.addActionListener(getGenerateButtonActionListener());
-		panel.add(btnNewButton, "8, 12, fill, fill");
-
-		JButton btnAddRow = new JButton("Add Row");
-		btnAddRow.addActionListener(getAddRowActionListener());
-		panel.add(btnAddRow, "12, 12, fill, center");
 
 		JLabel lblTaglength = new JLabel("tagLength");
 		panel.add(lblTaglength, "2, 14, right, center");
@@ -208,11 +197,24 @@ public class AppWindow {
 
 		JButton btnEncrypt = new JButton("Encrypt");
 		btnEncrypt.addActionListener(getEncryptActionListener());
-		panel.add(btnEncrypt, "6, 14, fill, center");
+		panel.add(btnEncrypt, "10, 12, fill, center");
+		
+		JButton btnAddRow = new JButton("Add Row");
+		btnAddRow.addActionListener(getAddRowActionListener());
+		panel.add(btnAddRow, "12, 12, fill, center");
+
+		JButton btnSave = new JButton("Save");
+		btnSave.setEnabled(!isConnectionClosed());
+		btnSave.addActionListener(getSaveButtonActionListener());
+		panel.add(btnSave, "8, 10, fill, center");
+
+		JButton btnNewButton = new JButton("Generate");
+		btnNewButton.addActionListener(getGenerateButtonActionListener());
+		panel.add(btnNewButton, "6, 14, fill, fill");
 
 		JButton btnDecrypt = new JButton("Decrypt");
 		btnDecrypt.addActionListener(getDecryptActionListener());
-		panel.add(btnDecrypt, "8, 14, fill, center");
+		panel.add(btnDecrypt, "10, 14, fill, center");
 
 		JButton btnDeleteRow = new JButton("Delete Row");
 		panel.add(btnDeleteRow, "12, 14, fill, center");
