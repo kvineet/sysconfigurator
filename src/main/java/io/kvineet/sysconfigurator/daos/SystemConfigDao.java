@@ -47,12 +47,21 @@ public class SystemConfigDao {
     return result;
   }
 
-  public void insertOrUpdateData(String tableName, List<Map<String, String>> dataSet,
+	public void insertOrUpdateData(String tableName, List<Map<String, String>> dataSet,
       List<Columns> columns, Connection conn) throws SQLException {
     if (dataSet.isEmpty()) {
       return;
     }
-    List<String> pkeys = columns.stream().filter(Columns::isPrimaryKey).map(Columns::getName)
+	
+    String query = constructInsertOrUpdateQuery(tableName, dataSet, columns);
+    System.out.println(query);
+    Statement stmnt = conn.createStatement();
+    stmnt.execute(query);
+  }
+
+  public String constructInsertOrUpdateQuery(String tableName, List<Map<String, String>> dataSet,
+		List<Columns> columns) {
+	List<String> pkeys = columns.stream().filter(Columns::isPrimaryKey).map(Columns::getName)
         .collect(Collectors.toList());
     List<String> cols = columns.stream().filter(e -> !e.isPrimaryKey()).map(Columns::getName)
         .collect(Collectors.toList());
@@ -65,9 +74,7 @@ public class SystemConfigDao {
         + "\n" + "ON CONFLICT(" + pkeys.stream().map(e -> e).collect(Collectors.joining(", "))
         + ")\n" + "DO UPDATE \n" + "SET \n"
         + cols.stream().map(e -> e + "= excluded." + e).collect(Collectors.joining(", \n"));
-    System.out.println(query);
-    Statement stmnt = conn.createStatement();
-    stmnt.execute(query);
+	return query;
   }
 
   private String joinData(Map<String, String> data, List<Columns> cols) {

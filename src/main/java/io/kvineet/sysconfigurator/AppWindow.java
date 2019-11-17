@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
+import java.awt.FileDialog;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -44,6 +46,7 @@ import io.kvineet.sysconfigurator.models.Configuration;
 import io.kvineet.sysconfigurator.models.DbConfig;
 import io.kvineet.sysconfigurator.models.EncryptorTableModel;
 import io.kvineet.sysconfigurator.services.BasicService;
+import io.kvineet.sysconfigurator.services.ExportQueryService;
 import io.kvineet.sysconfigurator.services.RecentConfigurationService;
 import io.kvineet.sysconfigurator.utils.AppWindowUtil;
 import io.kvineet.sysconfigurator.utils.EncryptionUtil;
@@ -57,6 +60,9 @@ public class AppWindow {
 	@Inject
 	private BasicService basicService;
 
+	@Inject
+	private ExportQueryService exportQueryService;
+
 	private JFrame frame;
 	private JTextField aesKey;
 	private JTextField dbUrl;
@@ -66,7 +72,7 @@ public class AppWindow {
 	private JComboBox<Integer> tagLength;
 	private JComboBox<Configuration> cmbRecentConfiguration;
 	private JTextField tableName;
-	JTable table;
+	private JTable table;
 
 	private static final List<String> keyLengths = Stream.of("128 Bit", "256 Bit").collect(Collectors.toList());
 	private static final List<Integer> keyBits = Stream.of(128, 256).collect(Collectors.toList());
@@ -87,7 +93,6 @@ public class AppWindow {
 					e.printStackTrace();
 				}
 			}
-
 		});
 	}
 
@@ -210,6 +215,10 @@ public class AppWindow {
 		btnAddRow.addActionListener(getAddRowActionListener());
 		panel.add(btnAddRow, "12, 12, fill, center");
 
+		JButton btnExportInserts = new JButton("Export INSERT`s");
+		btnAddRow.addActionListener(getExportInsertsActionListener(frame));
+		panel.add(btnExportInserts, "14, 12, fill, center");
+
 		JButton btnSave = new JButton("Save");
 		btnSave.setEnabled(!isConnectionClosed());
 		btnSave.addActionListener(getSaveButtonActionListener());
@@ -234,6 +243,31 @@ public class AppWindow {
 		JScrollPane scrollPane = new JScrollPane(table);
 
 		splitPane.setRightComponent(scrollPane);
+	}
+
+	private ActionListener getExportInsertsActionListener(Frame frame) {
+		return new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+				FileDialog fileDialog = new FileDialog(frame, "Export INSERT SQL Statements", FileDialog.SAVE);
+				fileDialog.setAlwaysOnTop(true);
+				fileDialog.setFile("*.sql");
+				fileDialog.setVisible(true);
+
+				List<Columns> columns;
+				try {
+					columns = basicService.listAllColumns(tableName.getText());
+					List<Map<String, String>> dataSet = tableModel.getDataSet();
+					List<Map<String, String>> removedSet = tableModel.getRemovedData();
+					exportQueryService.save(tableName.getText(), dataSet, removedSet, columns, fileDialog.getDirectory(), fileDialog.getFile());					
+				} catch (Exception e2) {
+					e2.printStackTrace();
+					showError(e2, "File cannot be exported. Make sure that the file name is correct and you have write access to location that you have selected.");
+				}
+			}
+		};
 	}
 
 	private ActionListener getRecentConfiguationClickedActionListener() {
@@ -356,7 +390,6 @@ public class AppWindow {
 			public void itemStateChanged(ItemEvent arg0) {
 
 				if (tglbtnConnect.isSelected() && tglbtnConnect.getText().equalsIgnoreCase(Constants.CONNECT)) {
-
 
 					if (!validate(getCurrentConfiguration()))
 						return;

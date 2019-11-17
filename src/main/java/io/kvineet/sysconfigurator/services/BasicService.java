@@ -46,6 +46,8 @@ public class BasicService {
     }
     return "success";
   }
+  
+  
 
   public List<Map<String, String>> retriveData(String tableName, List<Columns> columns)
       throws SQLException {

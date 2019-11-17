@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 public final class FileUtils {
 
 	public static <T> Optional<T> getFromFile(String fileName, boolean createIfNotExist, Class<T> clazz) {
@@ -36,13 +38,29 @@ public final class FileUtils {
 		}
 	}
 
-	public static <T> boolean saveToFile(T[] contents, String fileName) {
+	public static <T> boolean save(T[] contents, String fileName) throws JsonProcessingException {
 
+		byte[] byteContents = {};
+		try {
+			byteContents = JsonUtils.toJsonBytes(contents);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			throw e;
+		}
+		return save(byteContents, fileName);
+	}
+
+	public static boolean save(String fileContents, String fileName) {
+		byte[] byteContents = fileContents.getBytes();
+		return save(byteContents, fileName);
+	}
+	
+	private static boolean save(byte[] byteContents, String fileName) {
+		
 		Path path = Paths.get(fileName);
-		if (true) {
+		if (path.toFile().canWrite()) {
 			try {
 				createFileIfNotExists(fileName);
-				byte[] byteContents = JsonUtils.toJsonBytes(contents);
 				Files.write(path, byteContents);
 				return true;
 			} catch (Exception e) {
