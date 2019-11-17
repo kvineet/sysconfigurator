@@ -11,12 +11,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
+
 import io.kvineet.sysconfigurator.models.Columns;
 import io.kvineet.sysconfigurator.models.Columns.SortByOrder;
 
 public class SystemConfigDao {
-
 
   public List<Columns> fetchColumns(String tableName, Connection conn) throws SQLException {
     String query =

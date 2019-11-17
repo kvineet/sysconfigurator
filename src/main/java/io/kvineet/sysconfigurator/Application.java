@@ -4,6 +4,7 @@ package io.kvineet.sysconfigurator;
 import java.awt.EventQueue;
 import java.io.IOException;
 import java.util.Map;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.inject.Binding;
@@ -12,8 +13,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 
 public class Application {
-
-
 
   public static void main(String[] args)
       throws JsonParseException, JsonMappingException, IOException {

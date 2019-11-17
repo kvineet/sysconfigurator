@@ -2,11 +2,14 @@ package io.kvineet.sysconfigurator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
 import javax.sql.DataSource;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
 import io.kvineet.sysconfigurator.models.DbConfig;
 
 @Singleton
@@ -37,7 +40,6 @@ public class ConnectionPool {
     try {
       return datasource.getConnection();
     } catch (SQLException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     return null;
