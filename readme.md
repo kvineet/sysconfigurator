@@ -7,6 +7,15 @@ Your web-app only needs to know the DB credentials and AES key. It can then load
 
 The queries that retrieve primary keys for table are hard-coded for PostgreSQL, so if you want to use it for any other DB, you will need to change those queries.
 
+## IMPORTANT NOTES
+
+### Important note for recent configurations
+
+- While making jar executable, make sure to add write permissions.  
+- Allow saving recent configurations within same directory in file named `sysconfigurator.cfg`.
+
+### JSON Input  
+
 You can use JSON instead of typing in all the input fields.
 
 ``` json
@@ -19,6 +28,6 @@ You can use JSON instead of typing in all the input fields.
 }
 ```
 
-And here is a screenshot.
+### Screenshot  
 
 ![Example](./screenshot/example.jpg?raw=true)
