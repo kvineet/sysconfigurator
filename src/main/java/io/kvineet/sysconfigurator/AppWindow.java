@@ -444,7 +444,7 @@ public class AppWindow {
 				
 				btnSave.setEnabled(connected);
 				btnExportInserts.setEnabled(connected);
-				lblConnectionStatusValue.setText(connected ? Constants.CONNECTED : Constants.CONNECTED);
+				lblConnectionStatusValue.setText(connected ? Constants.CONNECTED : Constants.DISCONNECTED);
 				lblConnectionStatusValue.setForeground(connected ? Color.GREEN : Color.GRAY);
 			}
 

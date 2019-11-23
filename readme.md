@@ -11,8 +11,8 @@ The queries that retrieve primary keys for table are hard-coded for PostgreSQL, 
 
 ### Important note for recent configurations
 
-- While making jar executable, make sure to add write permissions.  
-- Allow saving recent configurations within same directory in file named `sysconfigurator.cfg`.
+- While making jar executable, make sure to add write permissions. Use 'chmod +xw ./sysconfigurator.jar'
+- It will allow saving recent configurations within same directory within file named `sysconfigurator.cfg`.
 
 ### JSON Input  
 
