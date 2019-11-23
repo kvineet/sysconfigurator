@@ -44,6 +44,10 @@ public class ConnectionPool {
     }
     return null;
   }
+  
+  public boolean isDatasourceConnected() {
+	  return datasource != null;
+  }
 
   public void closeConnection(Connection conn) {
     if (conn == null) {
@@ -94,7 +98,6 @@ public class ConnectionPool {
       dataSource.unwrap(HikariDataSource.class).close();
     }
   }
-
 
 }
 

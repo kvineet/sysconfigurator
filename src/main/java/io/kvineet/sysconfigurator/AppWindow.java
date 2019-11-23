@@ -5,13 +5,13 @@ import java.awt.Color;
 import java.awt.ComponentOrientation;
 import java.awt.EventQueue;
 import java.awt.FileDialog;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -73,13 +73,16 @@ public class AppWindow {
 	private JComboBox<Configuration> cmbRecentConfiguration;
 	private JTextField tableName;
 	private JTable table;
+	private JButton btnSave;
+	private JButton btnExportInserts;
+	private JLabel lblConnectionStatusValue;
 
 	private static final List<String> keyLengths = Stream.of("128 Bit", "256 Bit").collect(Collectors.toList());
 	private static final List<Integer> keyBits = Stream.of(128, 256).collect(Collectors.toList());
 	private static final List<Integer> tagLengths = Stream.of(128, 120, 112, 104, 96).collect(Collectors.toList());
 
 	private List<Configuration> recentConfigurations = new LinkedList<>();
-
+	
 	/**
 	 * Launch the application.
 	 */
@@ -179,11 +182,10 @@ public class AppWindow {
 		panel.add(tableName, "4, 8, 7, 1, fill, center");
 		tableName.setColumns(10);
 
-		JLabel lblConnectionStatus = new JLabel("Connection Status");
+		JLabel lblConnectionStatus = new JLabel("Connection Pool");
 		panel.add(lblConnectionStatus, "2, 10, 1, 1, right, center");
 
-		JLabel lblConnectionStatusValue = new JLabel(isConnectionClosed() ? "Disconnected" : "Connected");
-		lblConnectionStatusValue.setForeground(isConnectionClosed() ? Color.GRAY : Color.GREEN);
+		lblConnectionStatusValue = new JLabel(Constants.DISCONNECTED);
 		panel.add(lblConnectionStatusValue, "4, 10, 2, 1, left, center");
 
 		JToggleButton tglbtnConnect = new JToggleButton(Constants.CONNECT);
@@ -215,12 +217,13 @@ public class AppWindow {
 		btnAddRow.addActionListener(getAddRowActionListener());
 		panel.add(btnAddRow, "12, 12, fill, center");
 
-		JButton btnExportInserts = new JButton("Export INSERT`s");
-		btnAddRow.addActionListener(getExportInsertsActionListener(frame));
+		btnExportInserts = new JButton("Export INSERT`s");
+		btnExportInserts.setEnabled(false);
+		btnExportInserts.addActionListener(getExportInsertsActionListener());
 		panel.add(btnExportInserts, "14, 12, fill, center");
 
-		JButton btnSave = new JButton("Save");
-		btnSave.setEnabled(!isConnectionClosed());
+		btnSave = new JButton("Save");
+		btnSave.setEnabled(false);
 		btnSave.addActionListener(getSaveButtonActionListener());
 		panel.add(btnSave, "8, 10, fill, center");
 
@@ -245,26 +248,33 @@ public class AppWindow {
 		splitPane.setRightComponent(scrollPane);
 	}
 
-	private ActionListener getExportInsertsActionListener(Frame frame) {
+	private ActionListener getExportInsertsActionListener() {
 		return new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent arg0) {
+				List<Map<String, String>> dataSet = tableModel.getDataSet();
+				if (dataSet.isEmpty()) {
+					showError(null, "No data to export");
+					return;
+				}
 				
 				FileDialog fileDialog = new FileDialog(frame, "Export INSERT SQL Statements", FileDialog.SAVE);
 				fileDialog.setAlwaysOnTop(true);
 				fileDialog.setFile("*.sql");
 				fileDialog.setVisible(true);
 
-				List<Columns> columns;
-				try {
-					columns = basicService.listAllColumns(tableName.getText());
-					List<Map<String, String>> dataSet = tableModel.getDataSet();
-					List<Map<String, String>> removedSet = tableModel.getRemovedData();
-					exportQueryService.save(tableName.getText(), dataSet, removedSet, columns, fileDialog.getDirectory(), fileDialog.getFile());					
-				} catch (Exception e2) {
-					e2.printStackTrace();
-					showError(e2, "File cannot be exported. Make sure that the file name is correct and you have write access to location that you have selected.");
+				if (fileDialog.getFile() != null) {
+					List<Columns> columns;
+					try {
+						columns = basicService.listAllColumns(tableName.getText());
+						List<Map<String, String>> removedSet = tableModel.getRemovedData();
+						String fileName = fileDialog.getFile().replaceAll("(?i)(.sql)", "") + ".sql";
+						exportQueryService.save(tableName.getText(), dataSet, removedSet, columns,
+								fileDialog.getDirectory() + fileName);
+					} catch (Exception e2) {
+						e2.printStackTrace();
+ 						showError(e2,
+								"File cannot be exported. Make sure that the file name is correct and you have write access to location that you have selected.");
+					}
 				}
 			}
 		};
@@ -287,19 +297,10 @@ public class AppWindow {
 		};
 	}
 
-	private boolean isConnectionClosed() {
-
-		if (connectionPool == null || connectionPool.getConnection() == null)
+	private boolean isDatasourceConnected() {
+		if (connectionPool == null || connectionPool.isDatasourceConnected())
 			return true;
-
-		try {
-			if (connectionPool.getConnection().isClosed())
-				return true;
-			return false;
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return true;
-		}
+		return false;
 	}
 
 	private ActionListener getDeleteRowActionListener() {
@@ -389,7 +390,8 @@ public class AppWindow {
 			@Override
 			public void itemStateChanged(ItemEvent arg0) {
 
-				if (tglbtnConnect.isSelected() && tglbtnConnect.getText().equalsIgnoreCase(Constants.CONNECT)) {
+				boolean datasourceConnected = isDatasourceConnected();
+				if (!datasourceConnected && tglbtnConnect.getText().equalsIgnoreCase(Constants.CONNECT)) {
 
 					if (!validate(getCurrentConfiguration()))
 						return;
@@ -412,7 +414,7 @@ public class AppWindow {
 						showError(e);
 						return;
 					}
-					tglbtnConnect.setText(Constants.DISCONNECT);
+					setConnectButton(tglbtnConnect, true);
 
 				} else if (tglbtnConnect.getText().equalsIgnoreCase(Constants.DISCONNECT)) {
 
@@ -421,7 +423,7 @@ public class AppWindow {
 					tableModel.reloadData(cols, dataSet);
 
 					try {
-						if (isConnectionClosed()) {
+						if (!datasourceConnected) {
 							showError(null, "Connection is already closed.");
 						}
 						connectionPool.closeDataSource();
@@ -429,8 +431,21 @@ public class AppWindow {
 						showError(e);
 						return;
 					}
-					tglbtnConnect.setText(Constants.CONNECT);
+					setConnectButton(tglbtnConnect, false);
+				} else {
+					setConnectButton(tglbtnConnect, datasourceConnected);
 				}
+
+			}
+
+			private void setConnectButton(JToggleButton tglbtnConnect, boolean connected) {
+				tglbtnConnect.setSelected(connected);
+				tglbtnConnect.setText(connected ? Constants.DISCONNECT : Constants.CONNECT);
+				
+				btnSave.setEnabled(connected);
+				btnExportInserts.setEnabled(connected);
+				lblConnectionStatusValue.setText(connected ? Constants.CONNECTED : Constants.CONNECTED);
+				lblConnectionStatusValue.setForeground(connected ? Color.GREEN : Color.GRAY);
 			}
 
 			private DbConfig constructDbConfig() {
@@ -450,7 +465,12 @@ public class AppWindow {
 
 		Configuration configuration = getCurrentConfiguration();
 		if (validate(configuration) && !recentConfigurations.contains(configuration)) {
-			recentConfigurations = RecentConfigurationService.save(configuration, recentConfigurations);
+			try {
+				recentConfigurations = RecentConfigurationService.save(configuration, recentConfigurations);
+			} catch (Exception e) {
+				e.printStackTrace();
+				recentConfigurations = new ArrayList<>();
+			}
 			reloadRecentConfigurations();
 		}
 	}
@@ -465,7 +485,6 @@ public class AppWindow {
 	private boolean validate(Configuration configuration) {
 
 		if (StringUtils.isNullOrEmpty(configuration.getAesKey())
-				|| StringUtils.isNullOrEmpty(configuration.getDbPassword())
 				|| StringUtils.isNullOrEmpty(configuration.getDbUserName())
 				|| StringUtils.isNullOrEmpty(configuration.getTableName())
 				|| StringUtils.isNullOrEmpty(configuration.getDbUrl()) || !configuration.getDbUrl().contains("jdbc")) {

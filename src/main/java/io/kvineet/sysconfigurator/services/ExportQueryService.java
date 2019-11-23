@@ -1,5 +1,6 @@
 package io.kvineet.sysconfigurator.services;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Map;
 
@@ -21,12 +22,10 @@ public class ExportQueryService {
 	}
 
 	public boolean save(String tableName, List<Map<String, String>> dataSet, List<Map<String, String>> removedSet,
-			List<Columns> columns, String dirPath, String fileName) {
+			List<Columns> columns, String filePath) throws AccessDeniedException {
 
-		String query = basicDao.constructInsertOrUpdateQuery(tableName, dataSet, columns);
-
-		
-		FileUtils.save(query, "");
+		String query = basicDao.constructInsertOrUpdateQuery(tableName, dataSet, columns);	
+		FileUtils.save(query, filePath);
 		return true;
 	}
 }

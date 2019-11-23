@@ -25,10 +25,16 @@ public class Constants {
 	public static final String CONNECT = "Connect";
 
 	public static final String DISCONNECT = "Disconnect";
-
+	
+	public static final String CONNECTED = "Connected";
+	
+	public static final String DISCONNECTED = "Disconnected";
+	
 	public static final int DEFAULT_SELECT = 1;
 
 	public static final Integer DEFAULT_TAG_LENGTH = 128;
 	
 	public static final Pattern SERVER_NAME_PATTERN = Pattern.compile(".*//(.*)[?]*.*");
+
+	public static final int MAX_RECENT_CONFIGS = 10;
 }

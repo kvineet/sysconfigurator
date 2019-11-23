@@ -2,6 +2,7 @@ package io.kvineet.sysconfigurator.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +39,8 @@ public final class FileUtils {
 		}
 	}
 
-	public static <T> boolean save(T[] contents, String fileName) throws JsonProcessingException {
+	public static <T> boolean save(T[] contents, String fileName)
+			throws AccessDeniedException, JsonProcessingException {
 
 		byte[] byteContents = {};
 		try {
@@ -50,23 +52,20 @@ public final class FileUtils {
 		return save(byteContents, fileName);
 	}
 
-	public static boolean save(String fileContents, String fileName) {
+	public static boolean save(String fileContents, String fileName) throws AccessDeniedException {
 		byte[] byteContents = fileContents.getBytes();
 		return save(byteContents, fileName);
 	}
-	
-	private static boolean save(byte[] byteContents, String fileName) {
-		
+
+	private static boolean save(byte[] byteContents, String fileName) throws AccessDeniedException {
+
 		Path path = Paths.get(fileName);
-		if (path.toFile().canWrite()) {
-			try {
-				createFileIfNotExists(fileName);
-				Files.write(path, byteContents);
-				return true;
-			} catch (Exception e) {
-				System.out.println(String.format("Unable to save content in file: {}, \nError: {}", fileName, e));
-			}
+		try {
+			createFileIfNotExists(fileName);
+			Files.write(path, byteContents);
+			return true;
+		} catch (Exception e) {
+			throw new AccessDeniedException(fileName);
 		}
-		return false;
 	}
 }

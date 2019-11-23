@@ -18,3 +18,7 @@ You can use JSON instead of typing in all the input fields.
   "tableName": "system_config"
 }
 ```
+
+And here is a screenshot.
+
+![Example](./screenshot/example.jpg?raw=true)
