@@ -1,6 +1,7 @@
 package io.kvineet.sysconfigurator.utils;
 
 import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -29,5 +30,12 @@ public class JsonUtils {
     return mapper.readValue(str, clazz);
   }
 
-
+  public static <T> T fromJson(byte[] byteArray, Class<T> clazz)
+	  throws JsonParseException, JsonMappingException, IOException {
+	return mapper.readValue(byteArray, clazz);
+  }
+  
+  public static byte[] toJsonBytes(Object obj) throws JsonProcessingException {
+    return mapper.writeValueAsBytes(obj);
+  }
 }

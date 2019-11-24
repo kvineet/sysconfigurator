@@ -1,7 +1,11 @@
 package io.kvineet.sysconfigurator.models;
 
-public class DbConfig {
+import java.io.Serializable;
 
+public class DbConfig implements Serializable {
+
+  private static final long serialVersionUID = -123513623735607121L;
+	
   private String poolName;
   private int maximumPoolSize;
   private int minimumIdle;

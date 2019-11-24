@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+
 import io.kvineet.sysconfigurator.ConnectionPool;
 import io.kvineet.sysconfigurator.daos.SystemConfigDao;
 import io.kvineet.sysconfigurator.models.Columns;
@@ -44,6 +46,8 @@ public class BasicService {
     }
     return "success";
   }
+  
+  
 
   public List<Map<String, String>> retriveData(String tableName, List<Columns> columns)
       throws SQLException {
