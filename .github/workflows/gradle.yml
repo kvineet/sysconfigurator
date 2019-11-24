@@ -26,3 +26,5 @@ jobs:
         prerelease: "false"
         tags: "true"
         verbose: "true"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
